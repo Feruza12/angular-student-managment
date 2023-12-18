@@ -30,7 +30,7 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 
 ## For UI components NG-Zorro-Ant design
 
-##Basic function:
+## Basic functions of app:
  * Authentification (SignIn SignUp)
  * Students table (CRUD)
  * Groupd table (CRUD)
