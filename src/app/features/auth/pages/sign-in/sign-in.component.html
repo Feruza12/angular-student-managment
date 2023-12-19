@@ -25,7 +25,7 @@
           <a routerLink="/forgot-password">Forgot password</a>
         </div>
       </div>
-      <button nz-button class="login-form-button login-form-margin" [nzType]="'primary'">Log in</button>
+      <button nz-button class="login-form-button login-form-margin" [nzType]="'primary'" [disabled]="isLoading()" [nzLoading]="isLoading()">Log in</button>
       <div nz-row nzJustify="center">
         <div nz-col>
           Or

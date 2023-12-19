@@ -1,5 +1,5 @@
-import { Component, effect, inject } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -8,29 +8,32 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzTypographyModule } from 'ng-zorro-antd/typography';
 import { AuthService } from '../../../../shared/services/auth.service';
-import { Subject } from 'rxjs';
-import { Credentials } from '../../../../shared/interfaces/credentials';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, finalize, takeUntil } from 'rxjs/operators';
+import { EMPTY, Subject } from 'rxjs';
+import { NzMessageModule, NzMessageService } from 'ng-zorro-antd/message';
+import { CommonModule } from '@angular/common';
 
-export type RegisterStatus = 'pending' | 'creating' | 'success' | 'error';
-
-interface RegisterState {
-  status: RegisterStatus;
-}
 
 
 @Component({
   selector: 'app-sign-up',
   standalone: true,
-  imports: [NzFormModule, NzInputModule, NzButtonModule, FormsModule, ReactiveFormsModule, NzGridModule, NzTypographyModule, NzSpaceModule, RouterModule],
+  imports: [NzFormModule, NzInputModule, NzButtonModule, FormsModule, ReactiveFormsModule, NzGridModule, NzTypographyModule, NzSpaceModule, RouterModule, NzMessageModule, CommonModule],
   templateUrl: './sign-up.component.html',
   styleUrl: './sign-up.component.sass'
 })
-export class SignUpComponent {
+export class SignUpComponent implements OnDestroy {
 
   private router = inject(Router);
-  private authService = inject(AuthService)
-  private fb = inject(FormBuilder)
+  private authService = inject(AuthService);
+  private fb = inject(FormBuilder);
+  private toast = inject(NzMessageService)
+
+  private loadingState = signal<boolean>(false)
+
+  onDestroy$: Subject<void> = new Subject();
+
+  isLoading = computed(() => this.loadingState())
 
   validateForm: FormGroup<{
     email: FormControl<string>;
@@ -43,11 +46,25 @@ export class SignUpComponent {
   submitForm(): void {
     if (this.validateForm.valid) {
       const credentials = { ...this.validateForm.getRawValue() }
-      this.authService.signUp(credentials).subscribe({
-        next: (res) => {
-          console.log(res)
-        }
-      })
+
+      this.loadingState.set(true)
+
+      this.authService.signUp(credentials).pipe(
+        takeUntil(this.onDestroy$),
+        catchError((error) => {
+          this.toast.error(error.message, {
+            nzDuration: 5000
+          })
+          console.error('An error occurred:', error);
+
+          return EMPTY;
+
+        }),
+        finalize(() => {
+          this.loadingState.set(false)
+        }))
+        .subscribe()
+
 
     } else {
       Object.values(this.validateForm.controls).forEach(control => {
@@ -66,4 +83,10 @@ export class SignUpComponent {
       }
     })
   }
+
+  ngOnDestroy() {
+    this.onDestroy$.next();
+    this.onDestroy$.complete();
+  }
+
 }

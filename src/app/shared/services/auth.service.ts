@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth';
 import { from, defer } from 'rxjs';
 
-export type AuthUser = User | null | undefined;
+export type AuthUser = User | null ;
 
 interface AuthState {
   user: AuthUser;
@@ -27,7 +27,7 @@ export class AuthService {
 
   private user$ = authState(this.auth); //user observable
   private state = signal<AuthState>({
-    user: undefined,
+    user: null,
   });
 
   user = computed(() => this.state().user);
