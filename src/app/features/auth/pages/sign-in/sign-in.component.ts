@@ -73,7 +73,7 @@ export class SignInComponent implements OnDestroy {
   constructor() {
     effect(() => {
       if (this.authService.user()) {
-        this.router.navigate(['home']);
+        this.router.navigate(['/']);
       }
     });
   }

@@ -15,6 +15,12 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { environment } from '../environments/environment';
 
+import {
+  Firestore,
+  initializeFirestore,
+  getFirestore,
+} from 'firebase/firestore';
+
 const app = initializeApp(environment.firebase);
 
 export const AUTH = new InjectionToken('Firebase auth', {
@@ -22,6 +28,15 @@ export const AUTH = new InjectionToken('Firebase auth', {
   factory: () => {
     const auth = getAuth();
     return auth;
+  },
+});
+
+export const FIRESTORE = new InjectionToken('Firebase firestore', {
+  providedIn: 'root',
+  factory: () => {
+    const firestore: Firestore = getFirestore();
+
+    return firestore;
   },
 });
 
