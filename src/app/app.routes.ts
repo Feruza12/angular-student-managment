@@ -10,8 +10,6 @@ export const routes: Routes = [
     { path: 'sign-in', pathMatch: 'full', loadComponent: () => SignInComponent },
     { path: 'sign-up', pathMatch: 'full', loadComponent: () => SignUpComponent },
     { path: 'forgot-password', pathMatch: 'full', loadComponent: () => ForgotPasswordComponent },
-    // { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES) },
-    // { path: '', component: LayoutComponent, loadChildren: () => import('./shared/components/layout/layout.routes').then(m => m.LAYOUT_ROUTES), canLoad: [isAuthenticatedGuard()] },
     {
         path: '',
         component: LayoutComponent,

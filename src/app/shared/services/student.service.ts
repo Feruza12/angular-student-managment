@@ -8,7 +8,6 @@ import { collection, orderBy, query } from 'firebase/firestore';
 })
 export class StudentService {
   private firestore = inject(FIRESTORE);
-  private authService = inject(AuthService);
 
   constructor() { }
 

@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { LayoutComponent } from './layout.component';
 import { StudentsComponent } from '../../../features/students/students.component';
 import { HomeComponent } from '../../../features/home/home.component';
 
