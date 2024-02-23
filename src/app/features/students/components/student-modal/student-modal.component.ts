@@ -33,7 +33,7 @@ export class StudentModalComponent implements OnInit, OnDestroy {
 
   public groups: Signal<GroupSelect[]> = computed(() => this.groupService.groups().map(group => ({ name: group.title, value: group.title })));
 
-  private student: Signal<Student | null> =  this.studentService.selectedStudent;
+  private student: Signal<Student | null> = this.studentService.selectedStudent;
 
   private onDestroy$: Subject<void> = new Subject();
 
@@ -63,23 +63,7 @@ export class StudentModalComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
-    this.studentService.addStudent().pipe(
-      takeUntil(this.onDestroy$),
-      tap({
-        next: () => this.handleSuccess()
-      }),
-    ).subscribe();
-
-    this.studentService.updateStudent().pipe(
-      takeUntil(this.onDestroy$),
-      tap({
-        next: () => this.handleSuccess()
-      }),
-    ).subscribe();
-
-    this.groupService.getGroups().pipe(
-      takeUntil(this.onDestroy$)
-    ).subscribe();
+  
   }
 
   public handleSubmit(): void {
@@ -88,10 +72,26 @@ export class StudentModalComponent implements OnInit, OnDestroy {
     if (this.validateForm.valid) {
       if (this.action === 'add') {
         const student = { ...this.validateForm.getRawValue() }
+
+        this.studentService.addStudent().pipe(
+          takeUntil(this.onDestroy$),
+          tap({
+            next: () => this.handleSuccess()
+          }),
+        ).subscribe();
+
         this.studentService.addStudentSubject$.next(student);
 
       } else {
         const student = { ...this.validateForm.getRawValue(), id: this.student()?.id }
+
+        this.studentService.updateStudent().pipe(
+          takeUntil(this.onDestroy$),
+          tap({
+            next: () => this.handleSuccess()
+          }),
+        ).subscribe();
+        
         this.studentService.updateStudentSubject$.next(student);
       }
 

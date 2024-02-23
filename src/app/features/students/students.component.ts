@@ -24,7 +24,7 @@ import { StudentModalComponent } from './components/student-modal/student-modal.
   templateUrl: './students.component.html',
   styleUrl: './students.component.sass'
 })
-export class StudentsComponent implements OnInit, OnDestroy {
+export class StudentsComponent implements OnDestroy {
   private studentsService: StudentService = inject(StudentService)
   private toast: NzMessageService = inject(NzMessageService)
 
@@ -45,10 +45,6 @@ export class StudentsComponent implements OnInit, OnDestroy {
         })
       }
     })
-  }
-
-  public ngOnInit(): void {
-    this.studentsService.getStudents().pipe(takeUntil(this.onDestroy$)).subscribe();
   }
 
   public showStudentModal({ action, student }: ActionStudentModal): void {

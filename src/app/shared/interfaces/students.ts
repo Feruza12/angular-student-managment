@@ -17,11 +17,9 @@ export interface StudentFormValue {
 export type ModalType = "add" | "edit";
 
 export interface StudentState {
-    students: Student[];
     error: string | null;
     loading: boolean;
     selectedStudent: Student | null;
-    studentCount: Record<string, number>
 }
 
 export interface ActionStudentModal {

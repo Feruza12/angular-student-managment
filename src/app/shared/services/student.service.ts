@@ -1,7 +1,7 @@
 import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 
-import { Observable, Subject, defer } from 'rxjs';
-import { tap, exhaustMap } from 'rxjs/operators';
+import { Observable, Subject, defer, throwError } from 'rxjs';
+import { tap, exhaustMap, shareReplay, catchError } from 'rxjs/operators';
 
 import { Firestore, collection, orderBy, query, addDoc, updateDoc, serverTimestamp, deleteDoc, doc, DocumentReference, DocumentData } from 'firebase/firestore';
 import { collectionData } from 'rxfire/firestore';
@@ -9,6 +9,7 @@ import { collectionData } from 'rxfire/firestore';
 
 import { FIRESTORE } from '../../app.config';
 import { Student, StudentState } from '../interfaces/students';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 
 @Injectable({
@@ -17,113 +18,64 @@ import { Student, StudentState } from '../interfaces/students';
 export class StudentService {
   private fireStore: Firestore = inject(FIRESTORE);
 
-  private studentsSubject$: Observable<Student[]> = this.fetchStudents();
-
-  public studentActionSubject$ = new Subject<Partial<Student[]>>();
-
   public addStudentSubject$ = new Subject<Partial<Student>>();
   public deleteStudentSubject$ = new Subject<string>();
   public updateStudentSubject$ = new Subject<Partial<Student>>();
 
   private state: WritableSignal<StudentState> = signal<StudentState>({
-    students: [],
     error: null,
     loading: false,
-    selectedStudent: null,
-    studentCount: {}
+    selectedStudent: null
   });
 
-  public students: Signal<Student[]> = computed(() => this.state().students);
   public loading: Signal<boolean> = computed(() => this.state().loading);
   public error: Signal<string | null> = computed(() => this.state().error);
   public selectedStudent: Signal<Student | null> = computed(() => this.state().selectedStudent);
-  public studentCount: Signal<Record<string, number>> = computed(() => this.state().studentCount);
+
+  private students$: Observable<Student[]> = this.fetchStudents().pipe(
+    shareReplay(1),
+    catchError(this.handleError));
+
+
+  public students: Signal<Student[]> = toSignal(this.students$, { initialValue: [] });
+  public studentCount: Signal<Record<string, number>> = computed(() => {
+    const studentCount = this.students().reduce((accumulator, student) => {
+      if (accumulator.hasOwnProperty(student.group)) {
+        return { ...accumulator, [student.group]: accumulator[student.group as keyof typeof accumulator] + 1 };
+      } else {
+        return { ...accumulator, [student.group]: 1 };
+      }
+    }, {})
+
+    return studentCount
+  })
 
   constructor() {
 
   }
 
-  public getStudents(): Observable<Student[]> {
-    this.state.update((state) => ({
-      ...state,
-      loading: true
-    }))
-
-    return this.studentsSubject$.pipe(
-      tap({
-        next: (students: Student[]) => {
-          return this.state.update((state) => ({
-            ...state,
-            students,
-            loading: false
-          }))
-        },
-        error: (err: Error) => this.state.update((state) => ({
-          ...state,
-          error: err.message
-        }),
-        )
-      }))
-  }
-
-  public getStudentCount() {
-    return this.studentsSubject$.pipe(
-      tap({
-        next: (students: Student[]) => {
-          const studentCount = students.reduce((accumulator, student) => {
-            if (accumulator.hasOwnProperty(student.group)) {
-              return { ...accumulator, [student.group]: accumulator[student.group as keyof typeof accumulator] + 1 };
-            } else {
-              return { ...accumulator, [student.group]: 1 };
-            }
-          }, {})
-
-          return this.state.update((state) => ({
-            ...state,
-            studentCount,
-          }))
-        }
-      }))
-  }
-
   public addStudent(): Observable<DocumentReference<DocumentData, DocumentData>> {
     return this.addStudentSubject$.pipe(
       exhaustMap((student) => this.addStudentRequest(student)),
-      tap({
-        error: (err: Error) => this.state.update((state) => ({
-          ...state,
-          error: err.message
-        }))
-      })
-    )
+      catchError(this.handleError))
   }
 
   public updateStudent(): Observable<void> {
-     return this.updateStudentSubject$.pipe(
+    return this.updateStudentSubject$.pipe(
       exhaustMap((student) => this.updateStudentRequest(student)),
-      tap({
-        error: (err: Error) => this.state.update((state) => ({
-          ...state,
-          error: err.message
-        }))
-      })
+      catchError(this.handleError)
     )
   }
 
-  public deleteStudent(): Observable<void> {
+  public deleteStudent() {
     return this.deleteStudentSubject$.pipe(
       exhaustMap((id) => this.deleteStudentRequest(id)),
-      tap({
-        error: (err: Error) => this.state.update((state) => ({
-          ...state,
-          error: err.message
-        }))
-      })
+      catchError(this.handleError)
     );
   }
 
   public selectStudent(student: Student) {
-    return this.state.update((state) => ({ ...state, selectedStudent: student }))    
+    return this.state.update((state) => ({ ...state, selectedStudent: student }))
   }
 
   private fetchStudents(): Observable<Student[]> {
@@ -158,5 +110,25 @@ export class StudentService {
   private deleteStudentRequest(id: string): Observable<void> {
     const decRef = doc(this.fireStore, 'students', id)
     return defer(() => deleteDoc(decRef))
+  }
+
+  private handleError(err: any): Observable<never> {
+    let errorMessage = '';
+
+    if (err.error instanceof ErrorEvent) {
+      // A client-side or network error occurred. Handle it accordingly.
+      errorMessage = `An error occurred: ${err.error.message}`;
+    } else {
+      // The backend returned an unsuccessful response code.
+      // The response body may contain clues as to what went wrong,
+      errorMessage = `Server returned code: ${err.status}, error message is: ${err.message
+        }`;
+    }
+    this.state.update((state) => ({
+      ...state,
+      error: errorMessage
+    }));
+    console.error(errorMessage);
+    return throwError(() => errorMessage);
   }
 }
