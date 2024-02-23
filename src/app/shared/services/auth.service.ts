@@ -1,19 +1,23 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Injectable, InjectionToken, Signal, computed, inject, signal } from '@angular/core';
 import { AUTH } from '../../app.config';
 
 import { authState } from 'rxfire/auth';
+import { from, defer, tap, Observable } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import { Credentials } from '../interfaces/credentials';
+
 import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  Auth,
+  UserCredential
 } from 'firebase/auth';
-import { from, defer } from 'rxjs';
 
-export type AuthUser = User | null ;
+export type AuthUser = User | null;
 
 interface AuthState {
   user: AuthUser;
@@ -23,25 +27,28 @@ interface AuthState {
   providedIn: 'root'
 })
 export class AuthService {
-  private auth = inject(AUTH);
+  private auth: Auth = inject(AUTH);
 
   private user$ = authState(this.auth); //user observable
   private state = signal<AuthState>({
     user: null,
   });
 
-  user = computed(() => this.state().user);
+  public user: Signal<AuthUser> = computed(() => this.state().user);
 
   constructor() {
-    this.user$.pipe(takeUntilDestroyed()).subscribe((user) =>
-      this.state.update((state) => ({
-        ...state,
-        user,
-      }))
-    );
+    this.user$.pipe(
+      takeUntilDestroyed(),
+      tap((user: User | null) => {
+        this.state.update((state) => ({
+          ...state,
+          user,
+        }))
+      })
+    ).subscribe();
   }
 
-  login(credentials: Credentials) {
+  public login(credentials: Credentials): Observable<UserCredential> {
     return from(
       defer(() => signInWithEmailAndPassword(
         this.auth,
@@ -51,7 +58,7 @@ export class AuthService {
     )
   }
 
-  signUp(credentials: Credentials) {
+  public signUp(credentials: Credentials): Observable<UserCredential> {
     return from(
       defer(() => createUserWithEmailAndPassword(
         this.auth,
@@ -60,15 +67,15 @@ export class AuthService {
       ))
     )
   }
-  resetPassword(email: string){
+  public resetPassword(email: string): Observable<void> {
     return from(
-      defer(()=> sendPasswordResetEmail(
+      defer(() => sendPasswordResetEmail(
         this.auth,
         email
       ))
     )
   }
-  logout() {
+  public logout(): void {
     signOut(this.auth);
   }
 }
