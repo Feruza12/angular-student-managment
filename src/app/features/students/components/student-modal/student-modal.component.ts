@@ -63,7 +63,7 @@ export class StudentModalComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
-  
+
   }
 
   public handleSubmit(): void {
@@ -91,7 +91,7 @@ export class StudentModalComponent implements OnInit, OnDestroy {
             next: () => this.handleSuccess()
           }),
         ).subscribe();
-        
+
         this.studentService.updateStudentSubject$.next(student);
       }
 

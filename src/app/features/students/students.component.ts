@@ -44,6 +44,7 @@ export class StudentsComponent implements OnDestroy {
           nzDuration: 5000
         })
       }
+
     })
   }
 
@@ -54,9 +55,9 @@ export class StudentsComponent implements OnDestroy {
       this.studentsService.selectStudent(student);
     }
   }
-  
+
   public deleteStudent(id: string): void {
-    this.studentsService.deleteStudent().pipe(takeUntil(this.onDestroy$)).subscribe();
+    // this.studentsService.deleteStudent$.pipe(takeUntil( this.onDestroy$)).subscribe();
     this.studentsService.deleteStudentSubject$.next(id);
   }
 

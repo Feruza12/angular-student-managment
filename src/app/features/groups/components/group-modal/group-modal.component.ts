@@ -28,8 +28,8 @@ export class GroupModalComponent implements OnInit, OnDestroy {
   private formBuilder: NonNullableFormBuilder = inject(NonNullableFormBuilder);
   private toast: NzMessageService = inject(NzMessageService);
   private groupService: GroupService = inject(GroupService);
-  private selectedGroup: Signal<Group | null> = computed(() => this.groupService.selectedGroup());
-  private error: Signal<string | null> = computed(() => this.groupService.error());
+  private selectedGroup: Signal<Group | null> = this.groupService.selectedGroup;
+  private error: Signal<string | null> = this.groupService.error;
 
   private onDestroy$: Subject<void> = new Subject();
 

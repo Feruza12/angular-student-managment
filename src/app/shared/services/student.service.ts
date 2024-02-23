@@ -1,7 +1,7 @@
 import { Injectable, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 
 import { Observable, Subject, defer, throwError } from 'rxjs';
-import { tap, exhaustMap, shareReplay, catchError } from 'rxjs/operators';
+import { tap, exhaustMap, shareReplay, catchError, map, concatMap } from 'rxjs/operators';
 
 import { Firestore, collection, orderBy, query, addDoc, updateDoc, serverTimestamp, deleteDoc, doc, DocumentReference, DocumentData } from 'firebase/firestore';
 import { collectionData } from 'rxfire/firestore';
@@ -28,14 +28,10 @@ export class StudentService {
     selectedStudent: null
   });
 
-  public loading: Signal<boolean> = computed(() => this.state().loading);
-  public error: Signal<string | null> = computed(() => this.state().error);
-  public selectedStudent: Signal<Student | null> = computed(() => this.state().selectedStudent);
 
   private students$: Observable<Student[]> = this.fetchStudents().pipe(
     shareReplay(1),
     catchError(this.handleError));
-
 
   public students: Signal<Student[]> = toSignal(this.students$, { initialValue: [] });
   public studentCount: Signal<Record<string, number>> = computed(() => {
@@ -50,8 +46,16 @@ export class StudentService {
     return studentCount
   })
 
-  constructor() {
+  public loading: Signal<boolean> = computed(() => this.state().loading);
+  public error: Signal<string | null> = computed(() => this.state().error);
+  public selectedStudent: Signal<Student | null> = computed(() => this.state().selectedStudent);
 
+  constructor() {
+    toSignal(
+      this.deleteStudentSubject$.pipe(
+        exhaustMap(id => this.deleteStudentRequest(id)),
+        catchError(this.handleError))
+    )
   }
 
   public addStudent(): Observable<DocumentReference<DocumentData, DocumentData>> {
@@ -67,12 +71,6 @@ export class StudentService {
     )
   }
 
-  public deleteStudent() {
-    return this.deleteStudentSubject$.pipe(
-      exhaustMap((id) => this.deleteStudentRequest(id)),
-      catchError(this.handleError)
-    );
-  }
 
   public selectStudent(student: Student) {
     return this.state.update((state) => ({ ...state, selectedStudent: student }))
@@ -124,11 +122,11 @@ export class StudentService {
       errorMessage = `Server returned code: ${err.status}, error message is: ${err.message
         }`;
     }
+    console.error(errorMessage);
     this.state.update((state) => ({
       ...state,
       error: errorMessage
     }));
-    console.error(errorMessage);
     return throwError(() => errorMessage);
   }
 }
